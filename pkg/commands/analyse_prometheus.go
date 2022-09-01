@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -69,9 +68,8 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 	}
 
 	rt := api.DefaultRoundTripper
-	// comment out this block to run locally against distributors or query-frontend
+	// comment this block to run locally against distributors or query-frontend
 	if cmd.username != "" {
-		fmt.Println(cmd.username)
 		rt = config.NewBasicAuthRoundTripper(cmd.username, config.Secret(cmd.password), "", api.DefaultRoundTripper)
 	}
 	promClient, err := api.NewClient(api.Config{
@@ -105,11 +103,10 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 		query := "count by (job) (" + metric + ")"
 		result, _, err := v1api.Query(ctx, query, time.Now())
 		if err != nil {
-			fmt.Println("error querying used metric "+query)
+			log.Debugln("error querying used metric ", query)
 			counts := inUseMetrics[metric]
 			counts.totalCount += 9999999
 			inUseMetrics[metric] = counts
-			// return errors.Wrap(err, "error querying "+query)
 		} else {
 
 			vec := result.(model.Vector)
@@ -162,11 +159,10 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 		query := "count by (job) (" + metric + ")"
 		result, _, err := v1api.Query(ctx, query, time.Now())
 		if err != nil {
-			fmt.Println("error querying additional metric "+query)
+			log.Debugln("error querying additional metric ",query)
 			counts := inUseMetrics[metric]
 			counts.totalCount += 9999999
 			inUseMetrics[metric] = counts
-			// return errors.Wrap(err, "error querying "+query)
 		} else {
 
 			vec := result.(model.Vector)
