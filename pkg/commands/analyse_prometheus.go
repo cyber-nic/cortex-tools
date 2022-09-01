@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
+	"github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/pkg/labels"
 	log "github.com/sirupsen/logrus"
@@ -68,10 +69,11 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 	}
 
 	rt := api.DefaultRoundTripper
-	// if cmd.username != "" {
-	// 	fmt.Println(cmd.username)
-	// 	rt = config.NewBasicAuthRoundTripper(cmd.username, config.Secret(cmd.password), "", api.DefaultRoundTripper)
-	// }
+	// comment out this block to run locally against distributors or query-frontend
+	if cmd.username != "" {
+		fmt.Println(cmd.username)
+		rt = config.NewBasicAuthRoundTripper(cmd.username, config.Secret(cmd.password), "", api.DefaultRoundTripper)
+	}
 	promClient, err := api.NewClient(api.Config{
 		Address:      cmd.address,
 		RoundTripper: rt,
@@ -104,6 +106,9 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 		result, _, err := v1api.Query(ctx, query, time.Now())
 		if err != nil {
 			fmt.Println("error querying used metric "+query)
+			counts := inUseMetrics[metric]
+			counts.totalCount += 9999999
+			inUseMetrics[metric] = counts
 			// return errors.Wrap(err, "error querying "+query)
 		} else {
 
@@ -158,6 +163,9 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 		result, _, err := v1api.Query(ctx, query, time.Now())
 		if err != nil {
 			fmt.Println("error querying additional metric "+query)
+			counts := inUseMetrics[metric]
+			counts.totalCount += 9999999
+			inUseMetrics[metric] = counts
 			// return errors.Wrap(err, "error querying "+query)
 		} else {
 
