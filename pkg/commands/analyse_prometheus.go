@@ -107,7 +107,7 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 		counts := inUseMetrics[metric]
 
 		if err != nil {
-			log.Debugln("error querying used metric ", query)
+			log.Debugln("error querying used metric", query)
 			counts.totalCount = errorDefaultTotalCount
 			inUseMetrics[metric] = counts
 		} else {
@@ -161,7 +161,7 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 		counts := additionalMetrics[metric]
 
 		if err != nil {
-			log.Debugln("error querying additional metric ",query)
+			log.Debugln("error querying additional metric",query)
 			counts.totalCount = errorDefaultTotalCount
 			inUseMetrics[metric] = counts
 		} else {
