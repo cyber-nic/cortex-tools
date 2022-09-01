@@ -31,6 +31,8 @@ type PrometheusAnalyseCommand struct {
 	outputFile         string
 }
 
+const errorDefaultTotalCount = 99999999
+
 func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 	var (
 		hasGrafanaMetrics, hasRulerMetrics = false, false
@@ -102,16 +104,15 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 
 		query := "count by (job) (" + metric + ")"
 		result, _, err := v1api.Query(ctx, query, time.Now())
+		counts := inUseMetrics[metric]
+
 		if err != nil {
 			log.Debugln("error querying used metric ", query)
-			counts := inUseMetrics[metric]
-			counts.totalCount += 9999999
+			counts.totalCount = errorDefaultTotalCount
 			inUseMetrics[metric] = counts
 		} else {
-
 			vec := result.(model.Vector)
 			if len(vec) == 0 {
-				counts := inUseMetrics[metric]
 				counts.totalCount += 0
 				inUseMetrics[metric] = counts
 				log.Debugln("in use", metric, 0)
@@ -120,7 +121,6 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 			}
 
 			for _, sample := range vec {
-				counts := inUseMetrics[metric]
 				if counts.jobCount == nil {
 					counts.jobCount = make(map[string]int)
 				}
@@ -158,26 +158,23 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 
 		query := "count by (job) (" + metric + ")"
 		result, _, err := v1api.Query(ctx, query, time.Now())
+		counts := additionalMetrics[metric]
+
 		if err != nil {
 			log.Debugln("error querying additional metric ",query)
-			counts := inUseMetrics[metric]
-			counts.totalCount += 9999999
+			counts.totalCount = errorDefaultTotalCount
 			inUseMetrics[metric] = counts
 		} else {
-
 			vec := result.(model.Vector)
 			if len(vec) == 0 {
-				counts := additionalMetrics[metric]
 				counts.totalCount += 0
 				additionalMetrics[metric] = counts
-
 				log.Debugln("additional", metric, 0)
 
 				continue
 			}
 
 			for _, sample := range vec {
-				counts := additionalMetrics[metric]
 				if counts.jobCount == nil {
 					counts.jobCount = make(map[string]int)
 				}
