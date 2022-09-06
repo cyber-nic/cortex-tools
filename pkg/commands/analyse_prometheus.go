@@ -31,6 +31,8 @@ type PrometheusAnalyseCommand struct {
 	outputFile         string
 }
 
+const errorDefaultTotalCount = -1
+
 func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 	var (
 		hasGrafanaMetrics, hasRulerMetrics = false, false
@@ -101,8 +103,14 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 
 		query := "count by (job) (" + metric + ")"
 		result, _, err := v1api.Query(ctx, query, time.Now())
+
 		if err != nil {
-			return errors.Wrap(err, "error querying "+query)
+			log.Errorln("failed to query used metric", query)
+			counts := inUseMetrics[metric]
+			counts.totalCount = errorDefaultTotalCount
+			inUseMetrics[metric] = counts
+
+			continue
 		}
 
 		vec := result.(model.Vector)
@@ -139,6 +147,7 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 		jobCount   map[string]int
 	}{}
 	additionalMetricsCardinality := 0
+
 	for _, metricName := range metricNames {
 		metric := string(metricName)
 		if _, ok := inUseMetrics[metric]; ok {
@@ -150,8 +159,14 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 
 		query := "count by (job) (" + metric + ")"
 		result, _, err := v1api.Query(ctx, query, time.Now())
+
 		if err != nil {
-			return errors.Wrap(err, "error querying "+query)
+			log.Errorln("failed to query additional metric", query)
+			counts := additionalMetrics[metric]
+			counts.totalCount = errorDefaultTotalCount
+			inUseMetrics[metric] = counts
+
+			continue
 		}
 
 		vec := result.(model.Vector)
@@ -159,7 +174,6 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 			counts := additionalMetrics[metric]
 			counts.totalCount += 0
 			additionalMetrics[metric] = counts
-
 			log.Debugln("additional", metric, 0)
 
 			continue
