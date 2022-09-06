@@ -106,9 +106,10 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 		counts := inUseMetrics[metric]
 
 		if err != nil {
-			log.Infoln("error querying used metric", query)
+			log.Errorln("failed to query used metric", query)
 			counts.totalCount = errorDefaultTotalCount
 			inUseMetrics[metric] = counts
+
 			continue
 		}
 
@@ -117,6 +118,7 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 			counts.totalCount += 0
 			inUseMetrics[metric] = counts
 			log.Debugln("in use", metric, 0)
+
 			continue
 		}
 
@@ -158,33 +160,35 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 		counts := additionalMetrics[metric]
 
 		if err != nil {
-			log.Debugln("error querying additional metric", query)
+			log.Errorln("failed to query additional metric", query)
 			counts.totalCount = errorDefaultTotalCount
 			inUseMetrics[metric] = counts
-		} else {
-			vec := result.(model.Vector)
-			if len(vec) == 0 {
-				counts.totalCount += 0
-				additionalMetrics[metric] = counts
-				log.Debugln("additional", metric, 0)
 
-				continue
-			}
-
-			for _, sample := range vec {
-				if counts.jobCount == nil {
-					counts.jobCount = make(map[string]int)
-				}
-
-				counts.totalCount += int(sample.Value)
-				counts.jobCount[string(sample.Metric["job"])] += int(sample.Value)
-				additionalMetrics[metric] = counts
-
-				additionalMetricsCardinality += int(sample.Value)
-			}
-
-			log.Debugln("additional", metric, vec[0].Value)
+			continue
 		}
+
+		vec := result.(model.Vector)
+		if len(vec) == 0 {
+			counts.totalCount += 0
+			additionalMetrics[metric] = counts
+			log.Debugln("additional", metric, 0)
+
+			continue
+		}
+
+		for _, sample := range vec {
+			if counts.jobCount == nil {
+				counts.jobCount = make(map[string]int)
+			}
+
+			counts.totalCount += int(sample.Value)
+			counts.jobCount[string(sample.Metric["job"])] += int(sample.Value)
+			additionalMetrics[metric] = counts
+
+			additionalMetricsCardinality += int(sample.Value)
+		}
+
+		log.Debugln("additional", metric, vec[0].Value)
 	}
 
 	log.Infof("%d active series are NOT being used in dashboards", additionalMetricsCardinality)
