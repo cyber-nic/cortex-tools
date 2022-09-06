@@ -1049,7 +1049,7 @@ func (h *apiClientImpl) URL(ep string, args map[string]string) *url.URL {
 }
 
 func (h *apiClientImpl) Do(ctx context.Context, req *http.Request) (*http.Response, []byte, Warnings, error) {
-	// uncomment this block to run locally
+	// uncomment this line to run locally
 	// req.Header.Set("X-Scope-OrgID", "appian")
 
 	resp, body, err := h.client.Do(ctx, req)
