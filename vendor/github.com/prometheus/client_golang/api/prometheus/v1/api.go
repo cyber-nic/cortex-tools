@@ -812,7 +812,7 @@ func (h *httpAPI) Query(ctx context.Context, query string, ts time.Time) (model.
 	if err != nil {
 		return nil, warnings, err
 	}
-	
+
 	var qres queryResult
 	return model.Value(qres.v), warnings, json.Unmarshal(body, &qres)
 }
