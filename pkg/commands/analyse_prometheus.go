@@ -70,7 +70,6 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 	}
 
 	rt := api.DefaultRoundTripper
-	// comment this block to run locally against distributors or query-frontend
 	if cmd.username != "" {
 		rt = config.NewBasicAuthRoundTripper(cmd.username, config.Secret(cmd.password), "", api.DefaultRoundTripper)
 	}
@@ -107,35 +106,33 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 		counts := inUseMetrics[metric]
 
 		if err != nil {
-			log.Debugln("error querying used metric", query)
+			log.Infoln("error querying used metric", query)
 			counts.totalCount = errorDefaultTotalCount
 			inUseMetrics[metric] = counts
-		} else {
-			vec := result.(model.Vector)
-			if len(vec) == 0 {
-				counts.totalCount += 0
-				inUseMetrics[metric] = counts
-				log.Debugln("in use", metric, 0)
-
-				continue
-			}
-
-			for _, sample := range vec {
-				if counts.jobCount == nil {
-					counts.jobCount = make(map[string]int)
-				}
-
-				counts.totalCount += int(sample.Value)
-				counts.jobCount[string(sample.Metric["job"])] += int(sample.Value)
-				inUseMetrics[metric] = counts
-
-				inUseCardinality += int(sample.Value)
-			}
-
-				log.Debugln("in use", metric, vec[0].Value)
-
+			continue
 		}
 
+		vec := result.(model.Vector)
+		if len(vec) == 0 {
+			counts.totalCount += 0
+			inUseMetrics[metric] = counts
+			log.Debugln("in use", metric, 0)
+			continue
+		}
+
+		for _, sample := range vec {
+			if counts.jobCount == nil {
+				counts.jobCount = make(map[string]int)
+			}
+
+			counts.totalCount += int(sample.Value)
+			counts.jobCount[string(sample.Metric["job"])] += int(sample.Value)
+			inUseMetrics[metric] = counts
+
+			inUseCardinality += int(sample.Value)
+		}
+
+		log.Debugln("in use", metric, vec[0].Value)
 	}
 
 	log.Infof("%d active series are being used in dashboards", inUseCardinality)
@@ -161,7 +158,7 @@ func (cmd *PrometheusAnalyseCommand) run(k *kingpin.ParseContext) error {
 		counts := additionalMetrics[metric]
 
 		if err != nil {
-			log.Debugln("error querying additional metric",query)
+			log.Debugln("error querying additional metric", query)
 			counts.totalCount = errorDefaultTotalCount
 			inUseMetrics[metric] = counts
 		} else {
